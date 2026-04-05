@@ -1,0 +1,25 @@
+{
+  "description": "Тестовые данные. Запустите: python manage.py seed_data",
+  "users": [
+    {"email": "admin@example.com",   "password": "Test1234!", "role": "admin"},
+    {"email": "manager@example.com", "password": "Test1234!", "role": "manager"},
+    {"email": "viewer@example.com",  "password": "Test1234!", "role": "viewer"}
+  ],
+  "roles": ["admin", "manager", "viewer"],
+  "permissions": {
+    "document":    ["read", "create", "update", "delete"],
+    "report":      ["read", "create"],
+    "application": ["read", "create", "update"],
+    "admin":       ["access"]
+  },
+  "role_permissions": {
+    "admin":   ["document:read", "document:create", "document:update", "document:delete",
+                "report:read", "report:create",
+                "application:read", "application:create", "application:update",
+                "admin:access"],
+    "manager": ["document:read", "document:create", "document:update",
+                "report:read", "report:create",
+                "application:read", "application:create", "application:update"],
+    "viewer":  ["document:read", "report:read", "application:read"]
+  }
+}
