@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auth System</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222638;
+    --border: #2e3347;
+    --accent: #5b6cff;
+    --accent-hover: #4a5ae8;
+    --danger: #e05252;
+    --success: #3ecf8e;
+    --warn: #f59e0b;
+    --text: #e2e4f0;
+    --text-muted: #7b82a8;
+    --radius: 10px;
+    --shadow: 0 4px 24px rgba(0,0,0,.45);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* ── AUTH ── */
+  #auth-screen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px;
+  }
+  .auth-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 40px; width: 100%; max-width: 400px;
+    box-shadow: var(--shadow);
+  }
+  .auth-card h1 { font-size: 22px; margin-bottom: 6px; }
+  .auth-card p  { color: var(--text-muted); margin-bottom: 28px; font-size: 13px; }
+  .quick-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+  .quick-btn {
+    font-size: 11px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text-muted); cursor: pointer; transition: all .15s;
+  }
+  .quick-btn:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ── FORMS ── */
+  .field { margin-bottom: 16px; }
+  .field label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+  .field input, .field select {
+    width: 100%; padding: 10px 14px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+    font-size: 14px; outline: none; transition: border-color .15s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .err-msg { color: var(--danger); font-size: 12px; margin-top: 10px; display: none; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 18px; border-radius: 8px; border: none;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; text-decoration: none;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+  .btn-danger:hover { background: var(--danger); color: #fff; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-full { width: 100%; justify-content: center; }
+
+  /* ── LAYOUT ── */
+  #app { display: none; height: 100vh; flex-direction: column; }
+  header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 24px; display: flex; align-items: center; gap: 16px; height: 56px;
+  }
+  .logo { font-weight: 700; font-size: 16px; color: var(--accent); flex: 0 0 auto; }
+  .user-info { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+  .badge {
+    padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    background: var(--surface2); border: 1px solid var(--border);
+  }
+  .badge-admin { border-color: var(--accent); color: var(--accent); }
+  .badge-manager { border-color: var(--warn); color: var(--warn); }
+  .badge-viewer { border-color: var(--text-muted); color: var(--text-muted); }
+
+  /* ── TABS ── */
+  nav.tabs {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    display: flex; gap: 2px; padding: 0 24px; overflow-x: auto;
+  }
+  .tab-btn {
+    padding: 14px 18px; background: none; border: none; color: var(--text-muted);
+    font-size: 13px; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent;
+    transition: all .15s; white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  main { flex: 1; overflow-y: auto; padding: 28px 24px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px; margin-bottom: 18px;
+  }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .card-title { font-size: 15px; font-weight: 600; }
+  .card-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: var(--surface2); padding: 10px 14px; text-align: left; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--border); }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* ── PROFILE ── */
+  .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .info-row { padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; gap: 8px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { font-size: 12px; color: var(--text-muted); width: 130px; flex-shrink: 0; }
+  .info-value { font-size: 14px; }
+
+  /* ── TAGS ── */
+  .tag {
+    display: inline-block; padding: 3px 8px; border-radius: 20px;
+    font-size: 11px; background: var(--surface2); border: 1px solid var(--border); margin: 2px;
+  }
+  .tag-read   { border-color: #3ecf8e44; color: var(--success); }
+  .tag-create { border-color: #5b6cff44; color: var(--accent); }
+  .tag-update { border-color: #f59e0b44; color: var(--warn); }
+  .tag-delete { border-color: #e0525244; color: var(--danger); }
+  .tag-access { border-color: #a855f744; color: #a855f7; }
+
+  /* ── STATUS ── */
+  .status { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
+  .status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .status-active, .status-approved { color: var(--success); }
+  .status-draft, .status-pending { color: var(--warn); }
+  .status-open { color: var(--accent); }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 28px; right: 28px; z-index: 999;
+    display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+  }
+  .toast-item {
+    padding: 12px 18px; border-radius: 8px; font-size: 13px; font-weight: 500;
+    box-shadow: var(--shadow); animation: slideIn .2s ease; max-width: 320px;
+    pointer-events: auto;
+  }
+  .toast-success { background: #1a2e26; border: 1px solid var(--success); color: var(--success); }
+  .toast-error   { background: #2e1a1a; border: 1px solid var(--danger); color: var(--danger); }
+  @keyframes slideIn { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform: none; } }
+
+  /* ── MISC ── */
+  .empty { text-align: center; padding: 48px; color: var(--text-muted); }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; }
+  .row-actions { display: flex; gap: 6px; }
+  .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .form-row .field { flex: 1; min-width: 160px; }
+  .section-title { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing:.08em; margin-bottom: 14px; margin-top: 24px; }
+  .section-title:first-child { margin-top: 0; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .flex-end { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .access-denied { text-align:center; padding:60px; }
+  .access-denied .icon { font-size:48px; margin-bottom:16px; }
+  .access-denied p { color: var(--text-muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════ AUTH ═══════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <h1>Auth System</h1>
+    <p>Войдите в систему для продолжения</p>
+    <div class="quick-btns">
+      <span style="font-size:11px;color:var(--text-muted);align-self:center;">Быстрый вход:</span>
+      <button class="quick-btn" onclick="quickFill('admin@example.com')">admin</button>
+      <button class="quick-btn" onclick="quickFill('manager@example.com')">manager</button>
+      <button class="quick-btn" onclick="quickFill('viewer@example.com')">viewer</button>
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input id="login-email" type="email" placeholder="user@example.com" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="field">
+      <label>Пароль</label>
+      <input id="login-password" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="err-msg" id="login-err"></div>
+    <button class="btn btn-primary btn-full" id="login-btn" onclick="doLogin()" style="margin-top:8px;">
+      Войти
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════ APP ═══════════════════════ -->
+<div id="app">
+  <header>
+    <span class="logo">&#9670; Auth System</span>
+    <nav class="tabs" id="main-tabs" style="background:none;border:none;padding:0;flex:1;">
+      <button class="tab-btn active" onclick="switchTab('profile')">Профиль</button>
+      <button class="tab-btn" onclick="switchTab('documents')">Документы</button>
+      <button class="tab-btn" onclick="switchTab('reports')">Отчёты</button>
+      <button class="tab-btn" onclick="switchTab('applications')">Заявки</button>
+      <button class="tab-btn" id="admin-tab-btn" style="display:none" onclick="switchTab('admin')">&#9881; Админ</button>
+    </nav>
+    <div class="user-info">
+      <span id="header-name" style="color:var(--text-muted);font-size:13px;"></span>
+      <span class="badge" id="header-badge"></span>
+      <button class="btn btn-secondary btn-sm" onclick="doLogout()">Выйти</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- PROFILE -->
+    <div class="tab-panel active" id="tab-profile">
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Мой профиль</div><div class="card-subtitle" id="profile-email"></div></div>
+          <button class="btn btn-secondary btn-sm" onclick="toggleEdit()">&#9998; Редактировать</button>
+        </div>
+        <div id="profile-view">
+          <div class="info-row"><span class="info-label">Фамилия</span><span class="info-value" id="p-last"></span></div>
+          <div class="info-row"><span class="info-label">Имя</span><span class="info-value" id="p-first"></span></div>
+          <div class="info-row"><span class="info-label">Отчество</span><span class="info-value" id="p-middle"></span></div>
+          <div class="info-row"><span class="info-label">Аккаунт создан</span><span class="info-value" id="p-created"></span></div>
+        </div>
+        <div id="profile-edit" style="display:none;">
+          <div class="form-row">
+            <div class="field"><label>Фамилия</label><input id="e-last" type="text"></div>
+            <div class="field"><label>Имя</label><input id="e-first" type="text"></div>
+            <div class="field"><label>Отчество</label><input id="e-middle" type="text"></div>
+          </div>
+          <div class="flex-end">
+            <button class="btn btn-secondary btn-sm" onclick="toggleEdit()">Отмена</button>
+            <button class="btn btn-primary btn-sm" onclick="saveProfile()">Сохранить</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="roles-card">
+        <div class="card-title" style="margin-bottom:14px;">Мои роли и права</div>
+        <div id="my-roles-list"></div>
+      </div>
+    </div>
+
+    <!-- DOCUMENTS -->
+    <div class="tab-panel" id="tab-documents">
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Документы</div><div class="card-subtitle">Mock-данные для демонстрации RBAC</div></div>
+          <button class="btn btn-primary btn-sm" id="new-doc-btn" onclick="toggleForm('doc-form')">+ Создать</button>
+        </div>
+        <div id="doc-form" style="display:none;padding:16px;background:var(--surface2);border-radius:8px;margin-bottom:16px;">
+          <div class="form-row">
+            <div class="field"><label>Название</label><input id="doc-title" type="text" placeholder="Название документа"></div>
+            <div class="field"><label>Тип</label>
+              <select id="doc-type">
+                <option value="contract">Договор</option>
+                <option value="act">Акт</option>
+                <option value="spec">Спецификация</option>
+                <option value="other">Другое</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex-end">
+            <button class="btn btn-secondary btn-sm" onclick="toggleForm('doc-form')">Отмена</button>
+            <button class="btn btn-primary btn-sm" onclick="createDoc()">Создать</button>
+          </div>
+        </div>
+        <div id="docs-content"><div class="empty"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="tab-panel" id="tab-reports">
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Отчёты</div><div class="card-subtitle">Mock-данные</div></div>
+          <button class="btn btn-primary btn-sm" id="new-rep-btn" onclick="toggleForm('rep-form')">+ Создать</button>
+        </div>
+        <div id="rep-form" style="display:none;padding:16px;background:var(--surface2);border-radius:8px;margin-bottom:16px;">
+          <div class="form-row">
+            <div class="field"><label>Название</label><input id="rep-title" type="text" placeholder="Название отчёта"></div>
+            <div class="field"><label>Период</label><input id="rep-period" type="text" placeholder="2024-Q1"></div>
+          </div>
+          <div class="flex-end">
+            <button class="btn btn-secondary btn-sm" onclick="toggleForm('rep-form')">Отмена</button>
+            <button class="btn btn-primary btn-sm" onclick="createReport()">Создать</button>
+          </div>
+        </div>
+        <div id="reports-content"><div class="empty"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- APPLICATIONS -->
+    <div class="tab-panel" id="tab-applications">
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Заявки</div><div class="card-subtitle">Mock-данные</div></div>
+          <button class="btn btn-primary btn-sm" id="new-app-btn" onclick="toggleForm('app-form')">+ Создать</button>
+        </div>
+        <div id="app-form" style="display:none;padding:16px;background:var(--surface2);border-radius:8px;margin-bottom:16px;">
+          <div class="field"><label>Название заявки</label><input id="app-title" type="text" placeholder="Название заявки"></div>
+          <div class="flex-end">
+            <button class="btn btn-secondary btn-sm" onclick="toggleForm('app-form')">Отмена</button>
+            <button class="btn btn-primary btn-sm" onclick="createApp()">Создать</button>
+          </div>
+        </div>
+        <div id="apps-content"><div class="empty"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="tab-panel" id="tab-admin">
+      <div id="admin-content">
+        <div class="empty"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════
+const API = 'http://127.0.0.1:8000/api';
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let currentUser = null;
+let currentTab  = 'profile';
+
+// ══════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════
+function token()   { return localStorage.getItem('access_token'); }
+function rfToken() { return localStorage.getItem('refresh_token'); }
+
+function saveTokens(a, r) {
+  localStorage.setItem('access_token',  a);
+  localStorage.setItem('refresh_token', r);
+}
+
+function clearTokens() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+}
+
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...opts.headers };
+  if (token()) headers['Authorization'] = 'Bearer ' + token();
+  const r = await fetch(API + path, { ...opts, headers });
+  if (r.status === 401) { showAuth(); return null; }
+  return r;
+}
+
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast-item toast-${type}`;
+  el.textContent = msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function statusHtml(s) {
+  const map = { active: 'Активен', draft: 'Черновик', pending: 'На рассмотрении', approved: 'Одобрено', open: 'Открыта' };
+  return `<span class="status status-${s}">${map[s] || s}</span>`;
+}
+
+function denied(container) {
+  document.getElementById(container).innerHTML = `
+    <div class="access-denied">
+      <div class="icon">🔒</div>
+      <strong>Нет доступа</strong>
+      <p>У вашей роли нет прав на это действие.</p>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════
+function showAuth() {
+  clearTokens();
+  currentUser = null;
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display         = 'none';
+}
+
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display         = 'flex';
+}
+
+function quickFill(email) {
+  document.getElementById('login-email').value    = email;
+  document.getElementById('login-password').value = 'Test1234!';
+}
+
+async function doLogin() {
+  const btn   = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-err');
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Вход...';
+
+  try {
+    const r = await fetch(API + '/auth/login/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      errEl.textContent    = data.detail || 'Ошибка входа';
+      errEl.style.display  = 'block';
+      return;
+    }
+    saveTokens(data.access_token, data.refresh_token);
+    currentUser = data.user;
+    initApp();
+  } catch (e) {
+    errEl.textContent   = 'Не удалось подключиться к серверу';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Войти';
+  }
+}
+
+async function doLogout() {
+  const rt = rfToken();
+  if (rt) {
+    await fetch(API + '/auth/logout/', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token() },
+      body: JSON.stringify({ refresh_token: rt })
+    }).catch(() => {});
+  }
+  toast('Вы вышли из системы');
+  showAuth();
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+async function initApp() {
+  showApp();
+
+  // Загружаем актуальный профиль
+  const r = await api('/users/me/');
+  if (!r) return;
+  currentUser = await r.json();
+
+  renderHeader();
+  loadProfile();
+  loadTab(currentTab);
+}
+
+function roleName() {
+  if (!currentUser) return '';
+  // Определяем роль по правам через admin API — или по имени из seed
+  return (window._userRole || 'user');
+}
+
+function renderHeader() {
+  const u = currentUser;
+  document.getElementById('header-name').textContent = u.last_name + ' ' + u.first_name;
+
+  const badgeEl = document.getElementById('header-badge');
+  // Запрашиваем роли пользователя
+  fetch(API + `/admin/users/${u.id}/roles/`, {
+    headers: { Authorization: 'Bearer ' + token() }
+  }).then(r => r.ok ? r.json() : [])
+    .then(roles => {
+      if (!roles.length) { badgeEl.textContent = 'user'; return; }
+      const name = roles[0].role.name;
+      window._userRole = name;
+      window._userRoles = roles.map(r => r.role.name);
+      badgeEl.textContent  = name;
+      badgeEl.className    = `badge badge-${name}`;
+      // Показать вкладку Админ только для admin
+      if (name === 'admin') document.getElementById('admin-tab-btn').style.display = '';
+    })
+    .catch(() => { badgeEl.textContent = 'user'; });
+}
+
+// ══════════════════════════════════════════════
+//  TABS
+// ══════════════════════════════════════════════
+function switchTab(name) {
+  currentTab = name;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  loadTab(name);
+}
+
+function loadTab(name) {
+  if (name === 'profile')      loadProfile();
+  if (name === 'documents')    loadDocs();
+  if (name === 'reports')      loadReports();
+  if (name === 'applications') loadApps();
+  if (name === 'admin')        loadAdmin();
+}
+
+// ══════════════════════════════════════════════
+//  PROFILE
+// ══════════════════════════════════════════════
+function loadProfile() {
+  const u = currentUser;
+  if (!u) return;
+  document.getElementById('profile-email').textContent = u.email;
+  document.getElementById('p-last').textContent        = u.last_name   || '—';
+  document.getElementById('p-first').textContent       = u.first_name  || '—';
+  document.getElementById('p-middle').textContent      = u.middle_name || '—';
+  document.getElementById('p-created').textContent     = fmtDate(u.created_at);
+  document.getElementById('e-last').value   = u.last_name   || '';
+  document.getElementById('e-first').value  = u.first_name  || '';
+  document.getElementById('e-middle').value = u.middle_name || '';
+
+  // Права
+  const rolesEl = document.getElementById('my-roles-list');
+  const roleColors = { read:'tag-read', create:'tag-create', update:'tag-update', delete:'tag-delete', access:'tag-access' };
+  fetch(API + `/admin/users/${u.id}/roles/`, { headers: { Authorization: 'Bearer ' + token() } })
+    .then(r => r.ok ? r.json() : [])
+    .then(roles => {
+      if (!roles.length) { rolesEl.innerHTML = '<p style="color:var(--text-muted)">Нет назначенных ролей</p>'; return; }
+      rolesEl.innerHTML = roles.map(ur => `
+        <div style="margin-bottom:16px;">
+          <div style="font-weight:600;margin-bottom:8px;">${ur.role.name}
+            <span style="color:var(--text-muted);font-weight:400;font-size:12px;margin-left:6px;">${ur.role.description||''}</span>
+          </div>
+          <div>${ur.role.permissions.map(p =>
+            `<span class="tag ${roleColors[p.action]||''}">${p.resource}:${p.action}</span>`
+          ).join('')}</div>
+        </div>`).join('');
+    })
+    .catch(() => { rolesEl.innerHTML = ''; });
+}
+
+function toggleEdit() {
+  const view = document.getElementById('profile-view');
+  const edit = document.getElementById('profile-edit');
+  const show = edit.style.display === 'none';
+  view.style.display = show ? 'none' : '';
+  edit.style.display = show ? ''     : 'none';
+}
+
+async function saveProfile() {
+  const body = {
+    last_name:   document.getElementById('e-last').value.trim(),
+    first_name:  document.getElementById('e-first').value.trim(),
+    middle_name: document.getElementById('e-middle').value.trim(),
+  };
+  const r = await api('/users/me/', { method: 'PATCH', body: JSON.stringify(body) });
+  if (!r) return;
+  if (!r.ok) { toast('Ошибка сохранения', 'error'); return; }
+  currentUser = await r.json();
+  loadProfile();
+  toggleEdit();
+  renderHeader();
+  toast('Профиль обновлён');
+}
+
+// ══════════════════════════════════════════════
+//  DOCUMENTS
+// ══════════════════════════════════════════════
+let docsData = [];
+
+async function loadDocs() {
+  const el = document.getElementById('docs-content');
+  el.innerHTML = '<div class="empty"><div class="spinner"></div></div>';
+  const r = await api('/business/documents/');
+  if (!r) return;
+  if (r.status === 403) { denied('docs-content'); document.getElementById('new-doc-btn').style.display='none'; return; }
+  const data = await r.json();
+  docsData = data.results || [];
+  renderDocs();
+}
+
+function renderDocs() {
+  const el = document.getElementById('docs-content');
+  if (!docsData.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📄</div>Документов нет</div>'; return; }
+  el.innerHTML = `
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Название</th><th>Тип</th><th>Статус</th></tr></thead>
+      <tbody>${docsData.map(d => `
+        <tr>
+          <td style="color:var(--text-muted)">${d.id}</td>
+          <td>${d.title}</td>
+          <td><span class="tag">${d.type}</span></td>
+          <td>${statusHtml(d.status)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+}
+
+async function createDoc() {
+  const title = document.getElementById('doc-title').value.trim();
+  const type  = document.getElementById('doc-type').value;
+  if (!title) { toast('Введите название', 'error'); return; }
+  const r = await api('/business/documents/', { method: 'POST', body: JSON.stringify({ title, type }) });
+  if (!r) return;
+  if (r.status === 403) { toast('Нет права document:create', 'error'); return; }
+  const doc = await r.json();
+  docsData = [...docsData, doc];
+  renderDocs();
+  document.getElementById('doc-title').value = '';
+  toggleForm('doc-form');
+  toast('Документ создан');
+}
+
+// ══════════════════════════════════════════════
+//  REPORTS
+// ══════════════════════════════════════════════
+let reportsData = [];
+
+async function loadReports() {
+  const el = document.getElementById('reports-content');
+  el.innerHTML = '<div class="empty"><div class="spinner"></div></div>';
+  const r = await api('/business/reports/');
+  if (!r) return;
+  if (r.status === 403) { denied('reports-content'); document.getElementById('new-rep-btn').style.display='none'; return; }
+  const data = await r.json();
+  reportsData = data.results || [];
+  renderReports();
+}
+
+function renderReports() {
+  const el = document.getElementById('reports-content');
+  if (!reportsData.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📊</div>Отчётов нет</div>'; return; }
+  el.innerHTML = `
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Название</th><th>Период</th><th>Статус</th></tr></thead>
+      <tbody>${reportsData.map(d => `
+        <tr>
+          <td style="color:var(--text-muted)">${d.id}</td>
+          <td>${d.title}</td>
+          <td><span class="tag">${d.period || '—'}</span></td>
+          <td>${statusHtml(d.status)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+}
+
+async function createReport() {
+  const title  = document.getElementById('rep-title').value.trim();
+  const period = document.getElementById('rep-period').value.trim();
+  if (!title) { toast('Введите название', 'error'); return; }
+  const r = await api('/business/reports/', { method: 'POST', body: JSON.stringify({ title, period }) });
+  if (!r) return;
+  if (r.status === 403) { toast('Нет права report:create', 'error'); return; }
+  const rep = await r.json();
+  reportsData = [...reportsData, rep];
+  renderReports();
+  document.getElementById('rep-title').value  = '';
+  document.getElementById('rep-period').value = '';
+  toggleForm('rep-form');
+  toast('Отчёт создан');
+}
+
+// ══════════════════════════════════════════════
+//  APPLICATIONS
+// ══════════════════════════════════════════════
+let appsData = [];
+
+async function loadApps() {
+  const el = document.getElementById('apps-content');
+  el.innerHTML = '<div class="empty"><div class="spinner"></div></div>';
+  const r = await api('/business/applications/');
+  if (!r) return;
+  if (r.status === 403) { denied('apps-content'); document.getElementById('new-app-btn').style.display='none'; return; }
+  const data = await r.json();
+  appsData = data.results || [];
+  renderApps();
+}
+
+function renderApps() {
+  const el = document.getElementById('apps-content');
+  if (!appsData.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Заявок нет</div>'; return; }
+  el.innerHTML = `
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Название</th><th>Инициатор</th><th>Статус</th></tr></thead>
+      <tbody>${appsData.map(d => `
+        <tr>
+          <td style="color:var(--text-muted)">${d.id}</td>
+          <td>${d.title}</td>
+          <td>${d.applicant || '—'}</td>
+          <td>${statusHtml(d.status)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+}
+
+async function createApp() {
+  const title = document.getElementById('app-title').value.trim();
+  if (!title) { toast('Введите название', 'error'); return; }
+  const r = await api('/business/applications/', { method: 'POST', body: JSON.stringify({ title }) });
+  if (!r) return;
+  if (r.status === 403) { toast('Нет права application:create', 'error'); return; }
+  const app = await r.json();
+  appsData = [...appsData, app];
+  renderApps();
+  document.getElementById('app-title').value = '';
+  toggleForm('app-form');
+  toast('Заявка создана');
+}
+
+// ══════════════════════════════════════════════
+//  ADMIN
+// ══════════════════════════════════════════════
+async function loadAdmin() {
+  const el = document.getElementById('admin-content');
+  el.innerHTML = '<div class="empty"><div class="spinner"></div></div>';
+
+  const [rolesR, permsR] = await Promise.all([
+    api('/admin/roles/'),
+    api('/admin/permissions/')
+  ]);
+
+  if (!rolesR) return;
+  if (rolesR.status === 403) { denied('admin-content'); return; }
+
+  const roles = await rolesR.json();
+  const perms = permsR && permsR.ok ? await permsR.json() : [];
+
+  const actionColors = { read:'tag-read', create:'tag-create', update:'tag-update', delete:'tag-delete', access:'tag-access' };
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Роли</div><div class="card-subtitle">Управление ролями системы</div></div>
+        <button class="btn btn-primary btn-sm" onclick="toggleForm('new-role-form')">+ Роль</button>
+      </div>
+      <div id="new-role-form" style="display:none;padding:16px;background:var(--surface2);border-radius:8px;margin-bottom:16px;">
+        <div class="form-row">
+          <div class="field"><label>Название</label><input id="role-name" type="text" placeholder="manager"></div>
+          <div class="field"><label>Описание</label><input id="role-desc" type="text" placeholder="Описание роли"></div>
+        </div>
+        <div class="flex-end">
+          <button class="btn btn-secondary btn-sm" onclick="toggleForm('new-role-form')">Отмена</button>
+          <button class="btn btn-primary btn-sm" onclick="createRole()">Создать</button>
+        </div>
+      </div>
+      ${roles.map(role => `
+        <div style="padding:16px;background:var(--surface2);border-radius:8px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <span style="font-weight:600;font-size:14px;">${role.name}</span>
+            <span style="color:var(--text-muted);font-size:12px;">${role.description||''}</span>
+            <span style="margin-left:auto;color:var(--text-muted);font-size:11px;">${role.permissions.length} прав</span>
+          </div>
+          <div>${role.permissions.map(p =>
+            `<span class="tag ${actionColors[p.action]||''}">${p.resource}:${p.action}</span>`
+          ).join('') || '<span style="color:var(--text-muted);font-size:12px;">Нет прав</span>'}</div>
+        </div>`).join('')}
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Права доступа</div><div class="card-subtitle">Все разрешения в системе</div></div>
+        <button class="btn btn-primary btn-sm" onclick="toggleForm('new-perm-form')">+ Право</button>
+      </div>
+      <div id="new-perm-form" style="display:none;padding:16px;background:var(--surface2);border-radius:8px;margin-bottom:16px;">
+        <div class="form-row">
+          <div class="field"><label>Ресурс</label><input id="perm-res" type="text" placeholder="document"></div>
+          <div class="field"><label>Действие</label>
+            <select id="perm-act">
+              <option>read</option><option>create</option><option>update</option><option>delete</option><option>access</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex-end">
+          <button class="btn btn-secondary btn-sm" onclick="toggleForm('new-perm-form')">Отмена</button>
+          <button class="btn btn-primary btn-sm" onclick="createPerm()">Создать</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Ресурс</th><th>Действие</th><th>Назначена ролям</th></tr></thead>
+        <tbody>${perms.map(p => {
+          const assignedRoles = roles.filter(r => r.permissions.some(rp => rp.id === p.id)).map(r => r.name);
+          return `<tr>
+            <td><code style="background:var(--surface2);padding:2px 6px;border-radius:4px;">${p.resource}</code></td>
+            <td><span class="tag ${actionColors[p.action]||''}">${p.action}</span></td>
+            <td>${assignedRoles.map(n => `<span class="badge" style="margin:2px;">${n}</span>`).join('') || '<span style="color:var(--text-muted)">—</span>'}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table></div>
+    </div>`;
+}
+
+async function createRole() {
+  const name = document.getElementById('role-name').value.trim();
+  const desc = document.getElementById('role-desc').value.trim();
+  if (!name) { toast('Введите название роли', 'error'); return; }
+  const r = await api('/admin/roles/', { method: 'POST', body: JSON.stringify({ name, description: desc }) });
+  if (!r) return;
+  if (!r.ok) { const e = await r.json(); toast(JSON.stringify(e), 'error'); return; }
+  toast(`Роль "${name}" создана`);
+  toggleForm('new-role-form');
+  loadAdmin();
+}
+
+async function createPerm() {
+  const resource = document.getElementById('perm-res').value.trim();
+  const action   = document.getElementById('perm-act').value;
+  if (!resource) { toast('Введите ресурс', 'error'); return; }
+  const r = await api('/admin/permissions/', { method: 'POST', body: JSON.stringify({ resource, action }) });
+  if (!r) return;
+  if (!r.ok) { const e = await r.json(); toast(JSON.stringify(e), 'error'); return; }
+  toast(`Право ${resource}:${action} создано`);
+  toggleForm('new-perm-form');
+  loadAdmin();
+}
+
+// ══════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════
+function toggleForm(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+// ══════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════
+(async function boot() {
+  if (token()) {
+    // Проверяем токен
+    const r = await fetch(API + '/users/me/', {
+      headers: { Authorization: 'Bearer ' + token() }
+    });
+    if (r.ok) {
+      currentUser = await r.json();
+      initApp();
+      return;
+    }
+  }
+  showAuth();
+})();
+</script>
+</body>
+</html>

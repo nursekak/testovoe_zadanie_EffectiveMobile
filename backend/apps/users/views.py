@@ -1,16 +1,19 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from drf_spectacular.utils import extend_schema
 from .serializers import UserProfileSerializer, UserUpdateSerializer
 from apps.authentication.utils import require_authenticated
 
 
 class MeView(APIView):
+    @extend_schema(tags=["profile"], summary="Получить профиль текущего пользователя")
     @require_authenticated
     def get(self, request):
         serializer = UserProfileSerializer(request.user)
         return Response(serializer.data)
 
+    @extend_schema(tags=["profile"], summary="Обновить профиль (имя, фамилия, отчество)", request=UserUpdateSerializer)
     @require_authenticated
     def patch(self, request):
         serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
@@ -19,6 +22,7 @@ class MeView(APIView):
         serializer.save()
         return Response(UserProfileSerializer(request.user).data)
 
+    @extend_schema(tags=["profile"], summary="Удалить аккаунт (мягкое удаление + logout)")
     @require_authenticated
     def delete(self, request):
         user = request.user

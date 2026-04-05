@@ -4,6 +4,7 @@ from rest_framework import status
 
 
 def require_authenticated(method):
+    """Декоратор: требует аутентификацию через JWT."""
     @wraps(method)
     def wrapper(self, request, *args, **kwargs):
         if not request.user or not getattr(request.user, "is_active", False):

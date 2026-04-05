@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from drf_spectacular.utils import extend_schema
 from apps.access_control.decorators import require_permission
 
 MOCK_DOCUMENTS = [
@@ -22,10 +23,12 @@ MOCK_APPLICATIONS = [
 
 
 class DocumentListView(APIView):
+    @extend_schema(tags=["business"], summary="Список документов [требует document:read]")
     @require_permission("document", "read")
     def get(self, request):
         return Response({"count": len(MOCK_DOCUMENTS), "results": MOCK_DOCUMENTS})
 
+    @extend_schema(tags=["business"], summary="Создать документ [требует document:create]")
     @require_permission("document", "create")
     def post(self, request):
         new_doc = {
@@ -38,10 +41,12 @@ class DocumentListView(APIView):
 
 
 class ReportListView(APIView):
+    @extend_schema(tags=["business"], summary="Список отчётов [требует report:read]")
     @require_permission("report", "read")
     def get(self, request):
         return Response({"count": len(MOCK_REPORTS), "results": MOCK_REPORTS})
 
+    @extend_schema(tags=["business"], summary="Создать отчёт [требует report:create]")
     @require_permission("report", "create")
     def post(self, request):
         new_report = {
@@ -54,10 +59,12 @@ class ReportListView(APIView):
 
 
 class ApplicationListView(APIView):
+    @extend_schema(tags=["business"], summary="Список заявок [требует application:read]")
     @require_permission("application", "read")
     def get(self, request):
         return Response({"count": len(MOCK_APPLICATIONS), "results": MOCK_APPLICATIONS})
 
+    @extend_schema(tags=["business"], summary="Создать заявку [требует application:create]")
     @require_permission("application", "create")
     def post(self, request):
         new_app = {

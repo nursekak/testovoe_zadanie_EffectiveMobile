@@ -114,6 +114,6 @@ class Command(BaseCommand):
             role = role_objects[role_name]
             _, assigned = UserRole.objects.get_or_create(user=user, role=role)
             if assigned:
-                self.stdout.write(f"    → роль '{role_name}' назначена")
+                self.stdout.write(f"    -> роль '{role_name}' назначена")
 
         self.stdout.write(self.style.SUCCESS("=== Готово ==="))

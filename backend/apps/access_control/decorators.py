@@ -4,6 +4,7 @@ from rest_framework import status
 
 
 def require_permission(resource: str, action: str):
+    """Декоратор: требует конкретное право resource:action."""
     def decorator(method):
         @wraps(method)
         def wrapper(self, request, *args, **kwargs):
@@ -24,6 +25,7 @@ def require_permission(resource: str, action: str):
 
 
 def require_admin(method):
+    """Декоратор: требует право admin:access."""
     @wraps(method)
     def wrapper(self, request, *args, **kwargs):
         user = request.user

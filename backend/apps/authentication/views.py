@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from drf_spectacular.utils import extend_schema, OpenApiExample
 
 from .serializers import RegisterSerializer, LoginSerializer, RefreshSerializer, LogoutSerializer
 from .services import generate_access_token, generate_refresh_token, rotate_refresh_token, revoke_refresh_token
@@ -11,6 +12,11 @@ User = get_user_model()
 
 
 class RegisterView(APIView):
+    @extend_schema(
+        tags=["auth"],
+        summary="Регистрация нового пользователя",
+        request=RegisterSerializer,
+    )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if not serializer.is_valid():
@@ -30,6 +36,16 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
+    @extend_schema(
+        tags=["auth"],
+        summary="Вход в систему (получить JWT-токены)",
+        request=LoginSerializer,
+        examples=[
+            OpenApiExample("admin", value={"email": "admin@example.com", "password": "Test1234!"}),
+            OpenApiExample("manager", value={"email": "manager@example.com", "password": "Test1234!"}),
+            OpenApiExample("viewer", value={"email": "viewer@example.com", "password": "Test1234!"}),
+        ],
+    )
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if not serializer.is_valid():
@@ -70,6 +86,7 @@ class LoginView(APIView):
 
 
 class RefreshView(APIView):
+    @extend_schema(tags=["auth"], summary="Обновить access-токен по refresh-токену", request=RefreshSerializer)
     def post(self, request):
         serializer = RefreshSerializer(data=request.data)
         if not serializer.is_valid():
@@ -85,6 +102,7 @@ class RefreshView(APIView):
 
 
 class LogoutView(APIView):
+    @extend_schema(tags=["auth"], summary="Выход из системы (отозвать refresh-токен)", request=LogoutSerializer)
     def post(self, request):
         serializer = LogoutSerializer(data=request.data)
         if not serializer.is_valid():
